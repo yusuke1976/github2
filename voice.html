@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声入力から文字起こし</title>
+</head>
+<body>
+    <h1>音声入力から文字起こし</h1>
+    <button id="startButton">音声認識開始</button>
+    <button id="stopButton" disabled>音声認識終了</button>
+    <div id="output"></div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const output = document.getElementById('output');
+
+        // 音声認識の設定
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ja-JP';
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        let finalTranscript = '';
+
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            output.innerHTML = finalTranscript + '<i style="color:#999">' + interimTranscript + '</i>';
+        };
+
+        startButton.onclick = () => {
+            recognition.start();
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            startButton.textContent = '認識中...';
+        };
+
+        stopButton.onclick = () => {
+            recognition.stop();
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            startButton.textContent = '音声認識開始';
+        };
+
+        recognition.onend = () => {
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            startButton.textContent = '音声認識開始';
+        };
+    </script>
+</body>
+</html>
