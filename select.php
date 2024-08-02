@@ -28,18 +28,19 @@ $stmt->bindValue(':username', $_SESSION['username'], PDO::PARAM_STR);
 $stmt->execute();
 $blocked_users = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-// ブロックしたユーザーからの通知を除外して取得
+// ブロックしたユーザーからの通知を除外して取得（未読のみ）
 if (!empty($blocked_users)) {
     $placeholders = implode(',', array_fill(0, count($blocked_users), '?'));
     $sql = "SELECT * FROM notifications 
             WHERE recipient_username = ? 
             AND (sender_username NOT IN ($placeholders) OR sender_username = '')
+            AND is_read = FALSE
             ORDER BY created_at DESC LIMIT 5";
     $params = array_merge([$_SESSION['username']], $blocked_users);
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 } else {
-    $sql = "SELECT * FROM notifications WHERE recipient_username = ? ORDER BY created_at DESC LIMIT 5";
+    $sql = "SELECT * FROM notifications WHERE recipient_username = ? AND is_read = FALSE ORDER BY created_at DESC LIMIT 5";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$_SESSION['username']]);
 }
@@ -65,10 +66,10 @@ $unread_count = $stmt->fetchColumn();
 // 通知ドロップダウンメニューの HTML を更新
 $notification_html = '';
 if (empty($notifications)) {
-    $notification_html .= '<a class="dropdown-item" href="#">通知はありません</a>';
+    $notification_html .= '<a class="dropdown-item" href="#">新しい通知はありません</a>';
 } else {
     foreach ($notifications as $notification) {
-        $notification_html .= '<a class="dropdown-item ' . ($notification['is_read'] ? '' : 'font-weight-bold') . '" href="#">';
+        $notification_html .= '<a class="dropdown-item font-weight-bold" href="#">';
         $notification_html .= h($notification['message']);
         $notification_html .= '</a>';
     }
@@ -690,18 +691,15 @@ function loadNotifications() {
             $('.badge-danger').text(response.unread);
             
             if (response.notifications.length === 0) {
-                menu.append('<a class="dropdown-item" href="#">通知はありません</a>');
+                menu.append('<a class="dropdown-item" href="#">新しい通知はありません</a>');
             } else {
                 response.notifications.forEach(function(notification) {
-                    var item = $('<a class="dropdown-item" href="#"></a>');
+                    var item = $('<a class="dropdown-item font-weight-bold" href="#"></a>');
                     item.text(notification.message);
-                    if (!notification.is_read) {
-                        item.addClass('font-weight-bold');
-                    }
                     menu.append(item);
                 });
                 menu.append('<div class="dropdown-divider"></div>');
-                menu.append('<a class="dropdown-item" href="mark_all_read.php">すべて既読にする</a>');
+                menu.append('<a class="dropdown-item" href="#" id="markAllRead">すべて既読にする</a>');
             }
         }
     });
@@ -710,6 +708,27 @@ function loadNotifications() {
 $(document).ready(function() {
     loadNotifications();
     setInterval(loadNotifications, 60000); // 1分ごとに更新
+
+    // すべて既読にするリンクのクリックイベント
+    $(document).on('click', '#markAllRead', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: 'mark_all_read.php',
+            type: 'POST',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    $('.dropdown-menu').empty().append('<a class="dropdown-item" href="#">新しい通知はありません</a>');
+                    $('.badge-danger').text('0').hide(); // 未読バッジをクリアして非表示
+                } else {
+                    alert('エラー: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('通信エラーが発生しました。');
+            }
+        });
+    });
 });
 </script>
 
