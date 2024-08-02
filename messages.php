@@ -208,6 +208,22 @@ $sent_messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
         .delete-btn:hover {
             background-color: #cc0000;
         }
+
+        .blocked-user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .blocked-user-item:last-child {
+            border-bottom: none;
+        }
+
+        .unblock-btn {
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -273,11 +289,11 @@ $sent_messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="message-container">
             <h3>ブロックしたユーザー</h3>
             <?php foreach ($blocked_users as $blocked_user): ?>
-                <div>
-                    <?= h($blocked_user) ?>
+                <div class="blocked-user-item">
+                    <span><?= h($blocked_user) ?></span>
                     <form method="POST" style="display: inline;">
                         <input type="hidden" name="blocked_username" value="<?= h($blocked_user) ?>">
-                        <button type="submit" name="unblock_user" class="btn btn-warning btn-sm">ブロック解除</button>
+                        <button type="submit" name="unblock_user" class="btn btn-warning btn-sm unblock-btn">ブロック解除</button>
                     </form>
                 </div>
             <?php endforeach; ?>
