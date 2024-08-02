@@ -17,8 +17,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($stmt->execute()) {
         // 通知を作成
         $notification_message = $sender_username . "さんからメッセージが届きました。";
-        $stmt = $pdo->prepare("INSERT INTO notifications (recipient_username, message, created_at, is_read) VALUES (:recipient, :message, NOW(), FALSE)");
+        $stmt = $pdo->prepare("INSERT INTO notifications (recipient_username, sender_username, message, created_at, is_read) VALUES (:recipient, :sender, :message, NOW(), FALSE)");
         $stmt->bindValue(':recipient', $receiver_username, PDO::PARAM_STR);
+        $stmt->bindValue(':sender', $sender_username, PDO::PARAM_STR);
         $stmt->bindValue(':message', $notification_message, PDO::PARAM_STR);
         $stmt->execute();
 

@@ -22,13 +22,44 @@ $stmt->execute();
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 $user_genre = $user['genre'];
 
-// 通知を取得
-$stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient_username = :username ORDER BY created_at DESC LIMIT 5");
-$stmt->execute([':username' => $_SESSION['username']]);
+// ブロックしたユーザーのリストを取得
+$stmt = $pdo->prepare("SELECT blocked_username FROM user_blocks WHERE blocker_username = :username");
+$stmt->bindValue(':username', $_SESSION['username'], PDO::PARAM_STR);
+$stmt->execute();
+$blocked_users = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// ブロックしたユーザーからの通知を除外して取得
+if (!empty($blocked_users)) {
+    $placeholders = implode(',', array_fill(0, count($blocked_users), '?'));
+    $sql = "SELECT * FROM notifications 
+            WHERE recipient_username = ? 
+            AND (sender_username NOT IN ($placeholders) OR sender_username = '')
+            ORDER BY created_at DESC LIMIT 5";
+    $params = array_merge([$_SESSION['username']], $blocked_users);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+} else {
+    $sql = "SELECT * FROM notifications WHERE recipient_username = ? ORDER BY created_at DESC LIMIT 5";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$_SESSION['username']]);
+}
 $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE recipient_username = :username AND is_read = FALSE");
-$stmt->execute([':username' => $_SESSION['username']]);
+// 未読の通知数を取得（ブロックしたユーザーからの通知を除外）
+if (!empty($blocked_users)) {
+    $placeholders = implode(',', array_fill(0, count($blocked_users), '?'));
+    $sql = "SELECT COUNT(*) FROM notifications
+            WHERE recipient_username = ? 
+            AND is_read = FALSE 
+            AND (sender_username NOT IN ($placeholders) OR sender_username = '')";
+    $params = array_merge([$_SESSION['username']], $blocked_users);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+} else {
+    $sql = "SELECT COUNT(*) FROM notifications WHERE recipient_username = ? AND is_read = FALSE";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$_SESSION['username']]);
+}
 $unread_count = $stmt->fetchColumn();
 
 // 通知ドロップダウンメニューの HTML を更新
