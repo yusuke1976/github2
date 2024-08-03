@@ -5,6 +5,8 @@ include "funcs.php";
 // DB接続
 $pdo = db_conn();
 
+// NGワードのリスト
+$ng_words = ['暴力', '差別', 'わいせつ', '麻薬', '違法']; // 必要に応じて追加
 
 // ユーザーのプロフィール画像を取得
 $stmt = $pdo->prepare("SELECT profile_image FROM gs_user_table5 WHERE username = :username");
@@ -23,6 +25,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $worry_id = $_POST['worry_id'];
     $comment = $_POST['comment'];
     $username = $_SESSION['username'];
+
+    // NGワードチェック
+    $contains_ng_word = false;
+    foreach ($ng_words as $word) {
+        if (stripos($comment, $word) !== false) {
+            $contains_ng_word = true;
+            break;
+        }
+    }
+
+    if ($contains_ng_word) {
+        echo json_encode([
+            'success' => false,
+            'message' => '不適切な言葉が含まれています。投稿できません。'
+        ]);
+        exit;
+    }
 
     $stmt = $pdo->prepare("INSERT INTO gs_worry_comments (worry_id, username, comment) VALUES (:worry_id, :username, :comment)");
     $stmt->bindValue(':worry_id', $worry_id, PDO::PARAM_INT);
@@ -418,25 +437,30 @@ $status = $stmt->execute();
                 },
                 dataType: 'json',
                 success: function(response) {
-                    var commentSection = document.getElementById('commentSection' + worryId);
-                    var newComment = document.createElement('div');
-                    newComment.className = 'comment new-comment';
-                    newComment.id = 'comment' + response.id;
-                    newComment.innerHTML = `
-                        <div class="comment-header">
-                            <span class="comment-username">${response.username}</span>
-                            <span class="comment-date">${new Date(response.created_at).toLocaleString()}</span>
-                            <span class="delete-comment" onclick="deleteComment(${response.id})"><i class="fas fa-trash-alt"></i></span>
-                        </div>
-                        <div class="comment-content">${response.comment}</div>
-                    `;
-                    commentSection.insertBefore(newComment, commentSection.firstChild);
-                    
-                    document.getElementById('commentText' + worryId).value = '';
-                    showCommentForm(worryId);
+                    if (response.success) {
+                        var commentSection = document.getElementById('commentSection' + worryId);
+                        var newComment = document.createElement('div');
+                        newComment.className = 'comment new-comment';
+                        newComment.id = 'comment' + response.id;
+                        newComment.innerHTML = `
+                            <div class="comment-header">
+                                <span class="comment-username">${response.username}</span>
+                                <span class="comment-date">${new Date(response.created_at).toLocaleString()}</span>
+                                <span class="delete-comment" onclick="deleteComment(${response.id})"><i class="fas fa-trash-alt"></i></span>
+                            </div>
+                            <div class="comment-content">${response.comment}</div>
+                        `;
+                        commentSection.insertBefore(newComment, commentSection.firstChild);
+                        
+                        document.getElementById('commentText' + worryId).value = '';
+                        showCommentForm(worryId);
+                    } else {
+                        alert(response.message);
+                    }
                 },
                 error: function(xhr, status, error) {
                     console.error('エラー:', error);
+                    alert('コメントの投稿中にエラーが発生しました。');
                 }
             });
 
