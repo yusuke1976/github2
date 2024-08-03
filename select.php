@@ -3,6 +3,29 @@ session_start();
 
 include "funcs.php";
 
+// NGワードのリスト
+$ng_words = [
+    // 危険な表現
+    'ブス', 'チビ', '死ね', 'のろま', '強姦', 'シャブ', 'ヤーバー', '強姦',
+
+    // 暴力的な言葉
+    '殺す',
+
+    // 差別的な言葉
+    '非人', '乞食', 'ルンペン', '毛唐', '紅毛唐', 'クロンボ', 'ロスケ', 'アメ公', 'チョン', 'ブリカス', 'ユダ公', 'めくら', 'つんぼ', 'おし', 'びっこ', 'かたわ', '土人', 'オカマ',
+
+    // 性的な言葉
+    '外性器', '男性器', '女性器', '陰茎', '陰核', 'ペニス', '巨根', 'マンコ', 'クリトリス', '体位', '騎乗位', 'まんぐり返し', 'クンニ', '手淫', '手マン', '手コキ', 'フェラチオ',
+    '勃起', 'ガマン汁', '愛液', '潮吹き', '射精', '中出し', '本気汁', '立ちんぼ', 'イメクラ', 'デリヘル', 'ラブホ', 'ブルセラ', 'ソープランド', 'オナホール', 'ラブドール', '電マ',
+    'ディルド', 'ピンロー', 'ペニバン', '裏ビデオ', 'ロリコン', 'スカトロ', '飲尿', '輪姦', '青姦', '獣姦', '屍姦', '浣腸プレイ',
+
+    // 不適切な表現
+    'クソ', 'カス', 'きもい',
+
+    // 特定の属性を攻撃する言葉
+    'デブ', 'ハゲ',
+];
+
 //１. DB接続します
 $pdo = db_conn();
 
@@ -616,6 +639,19 @@ $(document).on('click', '.send-message-btn', function() {
 $('#sendMessageBtn').on('click', function() {
     var receiverUsername = $('#receiverUsername').val();
     var messageText = $('#messageText').val();
+
+    // NGワードチェック
+    var containsNgWord = false;
+    <?php foreach ($ng_words as $word): ?>
+    if (messageText.toLowerCase().indexOf('<?php echo strtolower($word); ?>') !== -1) {
+        containsNgWord = true;
+    }
+    <?php endforeach; ?>
+
+    if (containsNgWord) {
+        alert('不適切な言葉が含まれています。メッセージを送信できません。');
+        return;
+    }
 
     $.ajax({
         url: 'send_message.php',
