@@ -22,11 +22,11 @@ try {
 
     if ($credential) {
         echo json_encode([
-            'credentialId' => $credential['credential_id'],
-            'credentialPublicKey' => $credential['public_key']
+            'credentialId' => base64_encode($credential['credential_id']),
+            'publicKey' => base64_encode($credential['public_key'])
         ]);
     } else {
-        echo json_encode(['credentialId' => null, 'credentialPublicKey' => null]);
+        echo json_encode(['credentialId' => null, 'publicKey' => null]);
     }
 } catch (\PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

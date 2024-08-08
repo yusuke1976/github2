@@ -436,7 +436,7 @@ if ($status == false) {
 </nav>
 
 <div class="container">
-  <h2 class="text-center mb-4 font-weight-bold text-warning"><i class="fas fa-book-open"></i>登録データ一覧</h2>
+  <h2 class="text-center mt-4 mb-4 font-weight-bold text-warning"><i class="fas fa-book-open"></i>登録データ一覧</h2>
 
   <!-- 「助かりました」メッセージの表示 -->
   <?php if (!empty($helpful_message)): ?>
