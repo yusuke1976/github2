@@ -26,16 +26,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $worry = $_POST['worry'];
     $coment = $_POST['coment'];
     $username = $_SESSION['username'];
-    $worry_id = $_POST['worry_id'];
+    // $worry_id = $_POST['worry_id'];
 
     // データベースに本の情報を挿入
-    $stmt = $pdo->prepare("INSERT INTO gs_bm_table (book, url, worry, coment, username, worry_id, indate) VALUES(:book, :url, :worry, :coment, :username, :worry_id, sysdate())");
+    $stmt = $pdo->prepare("INSERT INTO gs_bm_table (book, url, worry, coment, username, date) VALUES(:book, :url, :worry, :coment, :username, sysdate())");
     $stmt->bindValue(':book', $book, PDO::PARAM_STR);
     $stmt->bindValue(':url', $url, PDO::PARAM_STR);
     $stmt->bindValue(':worry', $worry, PDO::PARAM_STR);
     $stmt->bindValue(':coment', $coment, PDO::PARAM_STR);
     $stmt->bindValue(':username', $username, PDO::PARAM_STR);
-    $stmt->bindValue(':worry_id', $worry_id, PDO::PARAM_STR);
+    // $stmt->bindValue(':worry_id', $worry_id, PDO::PARAM_STR);
     $status = $stmt->execute();
 
     if($status==false) {
