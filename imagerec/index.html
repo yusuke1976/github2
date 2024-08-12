@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像認識プログラム</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #imagePreview { max-width: 100%; margin-top: 20px; }
+        #result { margin-top: 20px; }
+        #loadingMessage { display: none; }
+    </style>
+</head>
+<body>
+    <h1>画像認識プログラム</h1>
+    <input type="file" id="imageUpload" accept="image/*">
+    <button onclick="recognizeImage()">画像認識</button>
+    <div id="loadingMessage">モデルを読み込んでいます...</div>
+    <div>
+        <img id="imagePreview" src="" alt="アップロードされた画像のプレビュー">
+    </div>
+    <div id="result"></div>
+
+    <script>
+        let model;
+        const loadingMessage = document.getElementById('loadingMessage');
+        const resultDiv = document.getElementById('result');
+
+        // モデルの読み込み
+        async function loadModel() {
+            loadingMessage.style.display = 'block';
+            try {
+                model = await mobilenet.load();
+                loadingMessage.style.display = 'none';
+                console.log('モデルが正常に読み込まれました。');
+            } catch (error) {
+                console.error('モデルの読み込み中にエラーが発生しました:', error);
+                loadingMessage.textContent = 'モデルの読み込みに失敗しました。ページを更新してください。';
+            }
+        }
+
+        // ページ読み込み時にモデルを読み込む
+        loadModel();
+
+        // 画像のプレビュー表示
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                document.getElementById('imagePreview').src = event.target.result;
+            }
+
+            reader.readAsDataURL(file);
+        });
+
+        // 画像認識の実行
+        async function recognizeImage() {
+            const img = document.getElementById('imagePreview');
+            resultDiv.innerHTML = '認識中...';
+
+            if (!img.src) {
+                resultDiv.innerText = '画像をアップロードしてください。';
+                return;
+            }
+
+            if (!model) {
+                resultDiv.innerText = 'モデルがまだ読み込まれていません。しばらくお待ちください。';
+                return;
+            }
+
+            try {
+                const predictions = await model.classify(img);
+                let resultHTML = '<h2>認識結果:</h2><ul>';
+                predictions.forEach(p => {
+                    resultHTML += `<li>${p.className}: ${(p.probability * 100).toFixed(2)}%</li>`;
+                });
+                resultHTML += '</ul>';
+                resultDiv.innerHTML = resultHTML;
+            } catch (error) {
+                console.error('画像認識中にエラーが発生しました:', error);
+                resultDiv.innerText = '画像の認識中にエラーが発生しました。別の画像を試すか、ページを更新してください。';
+            }
+        }
+    </script>
+</body>
+</html>
