@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物セグメンテーションとカスタム背景</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #camera-feed, #output-canvas, #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #camera-feed, #background-canvas {
+            z-index: -1;
+        }
+        #output-canvas {
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <video id="camera-feed" autoplay playsinline style="display: none;"></video>
+    <canvas id="output-canvas"></canvas>
+    <canvas id="background-canvas"></canvas>
+    <script>
+        const video = document.getElementById('camera-feed');
+        const outputCanvas = document.getElementById('output-canvas');
+        const outputCtx = outputCanvas.getContext('2d');
+        const backgroundCanvas = document.getElementById('background-canvas');
+        const backgroundCtx = backgroundCanvas.getContext('2d');
+
+        // カメラのセットアップ
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    resolve(video);
+                };
+            });
+        }
+
+        // キャンバスサイズの設定
+        function resizeCanvases() {
+            outputCanvas.width = window.innerWidth;
+            outputCanvas.height = window.innerHeight;
+            backgroundCanvas.width = window.innerWidth;
+            backgroundCanvas.height = window.innerHeight;
+        }
+
+        // パーティクルクラスとアニメーション（前回のコードと同じ）
+        class Particle {
+            constructor() {
+                this.x = Math.random() * backgroundCanvas.width;
+                this.y = Math.random() * backgroundCanvas.height;
+                this.size = Math.random() * 5 + 1;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x > backgroundCanvas.width) this.x = 0;
+                else if (this.x < 0) this.x = backgroundCanvas.width;
+
+                if (this.y > backgroundCanvas.height) this.y = 0;
+                else if (this.y < 0) this.y = backgroundCanvas.height;
+            }
+
+            draw() {
+                backgroundCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                backgroundCtx.beginPath();
+                backgroundCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                backgroundCtx.fill();
+            }
+        }
+
+        const particles = [];
+
+        function animateBackground() {
+            backgroundCtx.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+            backgroundCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            backgroundCtx.fillRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+
+            for (const particle of particles) {
+                particle.update();
+                particle.draw();
+            }
+
+            requestAnimationFrame(animateBackground);
+        }
+
+        // セグメンテーションと描画
+        async function segmentAndDraw(net) {
+            const segmentation = await net.segmentPerson(video);
+            const maskImage = bodyPix.toMask(segmentation);
+
+            outputCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+            outputCtx.putImageData(maskImage, 0, 0);
+            outputCtx.globalCompositeOperation = 'source-in';
+            outputCtx.drawImage(video, 0, 0, outputCanvas.width, outputCanvas.height);
+            outputCtx.globalCompositeOperation = 'source-over';
+
+            requestAnimationFrame(() => segmentAndDraw(net));
+        }
+
+        // メイン関数
+        async function main() {
+            resizeCanvases();
+            await setupCamera();
+            for (let i = 0; i < 100; i++) {
+                particles.push(new Particle());
+            }
+            animateBackground();
+
+            const net = await bodyPix.load({
+                architecture: 'MobileNetV1',
+                outputStride: 16,
+                multiplier: 0.75,
+                quantBytes: 2
+            });
+
+            segmentAndDraw(net);
+        }
+
+        // イベントリスナー
+        window.addEventListener('resize', resizeCanvases);
+
+        // アプリケーションの開始
+        main();
+    </script>
+</body>
+</html>

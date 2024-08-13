@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR体験 - 動物の耳と巨大な鬼のお面を試そう！</title>
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.5/dist/mindar-face.prod.js"></script>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.5/dist/mindar-face-aframe.prod.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #ui-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            width: 100%;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+        .ar-item {
+            display: inline-block;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .ar-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui-container">
+        <div class="ar-item" data-item="cat-ears">
+            <img src="neko.png" alt="猫耳">
+        </div>
+        <div class="ar-item" data-item="dog-ears">
+            <img src="inu.png" alt="犬耳">
+        </div>
+        <div class="ar-item" data-item="oni-mask">
+            <img src="oni.png" alt="鬼のお面">
+        </div>
+    </div>
+
+    <a-scene mindar-face embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-camera active="false" position="0 0 0"></a-camera>
+        <a-assets>
+            <img id="cat-ear-texture" src="neko.png" />
+            <img id="dog-ear-texture" src="inu.png" />
+            <img id="oni-mask-texture" src="oni.png" />
+        </a-assets>
+        <a-entity mindar-face-target="anchorIndex: 168">
+            <a-plane id="cat-ears" src="#cat-ear-texture" position="0 0.5 0" height="0.5" width="1" rotation="0 0 0" visible="false"></a-plane>
+            <a-plane id="dog-ears" src="#dog-ear-texture" position="0 0.5 0" height="0.5" width="1" rotation="0 0 0" visible="false"></a-plane>
+            <a-plane id="oni-mask" src="#oni-mask-texture" position="0 0 -0.5" height="2.2" width="2" rotation="0 0 0" visible="false"></a-plane>
+        </a-entity>
+        <a-entity light="type: ambient; color: #BBB; intensity: 1"></a-entity>
+    </a-scene>
+
+    <script>
+        const catEars = document.querySelector("#cat-ears");
+        const dogEars = document.querySelector("#dog-ears");
+        const oniMask = document.querySelector("#oni-mask");
+        
+        function hideAllItems() {
+            catEars.setAttribute("visible", false);
+            dogEars.setAttribute("visible", false);
+            oniMask.setAttribute("visible", false);
+        }
+
+        document.querySelectorAll(".ar-item").forEach(item => {
+            item.addEventListener("click", function() {
+                const itemType = this.getAttribute("data-item");
+                hideAllItems();
+                switch(itemType) {
+                    case "cat-ears":
+                        catEars.setAttribute("visible", true);
+                        alert("猫耳モードを開始しました！カメラに顔を向けてください。");
+                        break;
+                    case "dog-ears":
+                        dogEars.setAttribute("visible", true);
+                        alert("犬耳モードを開始しました！カメラに顔を向けてください。");
+                        break;
+                    case "oni-mask":
+                        oniMask.setAttribute("visible", true);
+                        alert("巨大鬼のお面モードを開始しました！カメラに顔を向けてください。");
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
