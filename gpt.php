@@ -207,7 +207,7 @@ $profile_image = $user['profile_image'] ? 'uploads/' . $user['profile_image'] : 
             </section>
 
             <div id="bookItem" class="container">
-                <div class="row row-cols-1 row-cols-md-3 g-4"></div>
+                <div class="row row-cols-1 row-cols-md-3 g-4 mt-3"></div>
             </div>
         </main>
     </body>
